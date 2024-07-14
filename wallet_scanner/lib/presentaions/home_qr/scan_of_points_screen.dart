@@ -1,19 +1,19 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:wallet_scanner/dio_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:wallet_scanner/main.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:wallet_scanner/dio_helper.dart';
+import 'package:wallet_scanner/presentaions/home_qr/scan_of_wallet_screen.dart';
 
-class SecondScreen extends StatefulWidget {
-  SecondScreen({super.key, required this.id});
+class PointsScreen extends StatefulWidget {
+  PointsScreen({super.key, required this.id});
   String id;
   @override
-  State<SecondScreen> createState() => _SecondScreenState();
+  State<PointsScreen> createState() => _PointsScreenState();
 }
 
-class _SecondScreenState extends State<SecondScreen> {
-  TextEditingController moneyController = TextEditingController();
+class _PointsScreenState extends State<PointsScreen> {
   TextEditingController passowrdController = TextEditingController();
   bool loading = false;
   @override
@@ -64,7 +64,7 @@ class _SecondScreenState extends State<SecondScreen> {
             ),
           ),
           title: Text(
-            "ارسال رصيد",
+            "النقاط",
             style: TextStyle(
               color: Colors.black,
               fontSize: 20.sp,
@@ -82,7 +82,7 @@ class _SecondScreenState extends State<SecondScreen> {
                 height: 100.h,
               ),
               Text(
-                'ادخل المبلغ الذي تريد ارساله',
+                'ادخل البريد الالكتروني',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 15.sp,
@@ -96,53 +96,27 @@ class _SecondScreenState extends State<SecondScreen> {
                 readOnly: false,
                 maxLines: 1,
                 minLines: 1,
-                textInputType: TextInputType.number,
+                textInputType: TextInputType.emailAddress,
                 obscureText: false,
-                controller: moneyController,
-                hintText: '250' + ' ' + 'SR',
-                validator: () {},
-              ),
-              SizedBox(
-                height: 15.h,
-              ),
-              Text(
-                'ادخل كلمة السر',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(
-                height: 5.h,
-              ),
-              TextFormFiled(
-                readOnly: false,
-                maxLines: 1,
-                minLines: 1,
-                textInputType: TextInputType.text,
-                obscureText: true,
                 controller: passowrdController,
-                hintText: '********',
+                hintText: 'البريد الالكتروني',
                 validator: () {},
               ),
-              SizedBox(
-                height: 15.h,
-              ),
+              Spacer(),
               GestureDetector(
                 onTap: () {
-                  if (passowrdController.text.isNotEmpty &&
-                      moneyController.text.isNotEmpty) {
+                  if (passowrdController.text.isNotEmpty) {
                     setState(() {
+                      scanToGetPoints(sendData: {
+                        'code': widget.id,
+                        'email': passowrdController.text,
+                      });
+
                       loading = true;
-                      scanToGetUserId(
-                          id: widget.id,
-                          amount: moneyController.text,
-                          password: passowrdController.text);
                     });
                   } else {
                     ShowToast(
-                        msg: 'ادخل المبلغ وكلمه السر',
+                        msg: 'ادخل البريد الالكتروني',
                         states: ToastStates.ERROR);
                   }
                 },
@@ -177,65 +151,34 @@ class _SecondScreenState extends State<SecondScreen> {
     );
   }
 
-  Future<void> scanToGetUserId({required String id, amount, password}) async {
-    var data = FormData.fromMap(
-        {'client_id': id, 'amount': amount, 'password': password});
+  Future<void> scanToGetPoints({Map<String, dynamic>? sendData}) async {
+     var data = FormData.fromMap(
+        sendData!);
     await DioHelper.dio
         .post(
-            'https://admin.gulfsaudi.com/public/api/v1/client/scanToPayToStationFromWallet',
+            'https://admin.gulfsaudi.com/public/api/v1/client/ScanToGetPoints',
             data: data)
         .then((value) {
-      setState(() { loading = false;});
+      setState(() {
+        loading = false;
+      });
 
-          ShowToast(
-                        msg: value.data['message'].toString(),
-                        states:
-                        
-                        value.data['message'].toString()== "عملية التحويل تمت بنجاح"?
-                        
-                        
-                         ToastStates.SUCCESS:ToastStates.ERROR);
-      print('${value.data['message'].toString()}=============');
+        ShowToast(
+          msg: value.data["status"] == true
+              ? 'تمت العمليه بنجاح'
+              : value.data['message']["code"] != null
+                  ? "The selected code is invalid."
+                  : value.data['message']["email"] != null
+                      ? "The selected email is invalid."
+                     
+                          : '',
+          states: value.data["status"] == true
+              ? ToastStates.SUCCESS
+              : ToastStates.ERROR);
+
+      print('${value.data['message']['email'][0].toString()}=============');
     }).catchError((onError) {
-      setState(() { loading = false;});
-           ShowToast(
-                        msg:onError,
-                        states:
-                        
-                        
-                        
-                         ToastStates.ERROR);
       print('${onError}');
     });
   }
-}
-
-void ShowToast({required String? msg, required ToastStates? states}) {
-  Fluttertoast.showToast(
-      msg: msg!,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 5,
-      backgroundColor: ChooseToastColor(states!),
-      textColor: Colors.black,
-      fontSize: 16.0);
-}
-
-enum ToastStates { SUCCESS, ERROR, WARNING }
-
-Color? ChooseToastColor(ToastStates states) {
-  Color color;
-
-  switch (states) {
-    case ToastStates.SUCCESS:
-      color = Colors.green;
-      break;
-    case ToastStates.ERROR:
-      color = Colors.red;
-      break;
-    case ToastStates.WARNING:
-      color = Colors.amber;
-      break;
-  }
-  return color;
 }
