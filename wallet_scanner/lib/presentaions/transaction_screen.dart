@@ -2,23 +2,27 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:wallet_scanner/dio_helper.dart';
+import 'package:wallet_scanner/main.dart';
 import 'package:wallet_scanner/presentaions/home_qr/scan_of_wallet_screen.dart';
 
-class RewordsScreen extends StatefulWidget {
-  RewordsScreen({super.key, required this.id});
-  String id;
+class TransactionScreen extends StatefulWidget {
+  TransactionScreen({super.key, required this.name, required this.id});
+  String name;
+
+  int id;
+
   @override
-  State<RewordsScreen> createState() => _RewordsScreenState();
+  State<TransactionScreen> createState() => _TransactionScreenState();
 }
 
-class _RewordsScreenState extends State<RewordsScreen> {
-  TextEditingController passowrdController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
+class _TransactionScreenState extends State<TransactionScreen> {
   bool loading = false;
   @override
   Widget build(BuildContext context) {
+    TextEditingController amountController = TextEditingController();
+
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
           foregroundColor: Colors.white,
@@ -63,7 +67,7 @@ class _RewordsScreenState extends State<RewordsScreen> {
             ),
           ),
           title: Text(
-            "المكافاه",
+            widget.name,
             style: TextStyle(
               color: Colors.black,
               fontSize: 20.sp,
@@ -72,77 +76,50 @@ class _RewordsScreenState extends State<RewordsScreen> {
           ),
         ),
         body: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+          padding: EdgeInsets.all(10.h),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               SizedBox(
                 height: 100.h,
               ),
               Text(
-                'ادخل البريد الالكتروني',
+                "Enter the number of litres",
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 15.sp,
                   fontWeight: FontWeight.w700,
                 ),
-              ),
-              SizedBox(
-                height: 5.h,
-              ),
-              TextFormFiled(
-                readOnly: false,
-                maxLines: 1,
-                minLines: 1,
-                textInputType: TextInputType.emailAddress,
-                obscureText: false,
-                controller: emailController,
-                hintText: 'البريد الالكتروني',
-                validator: () {},
               ),
               SizedBox(
                 height: 10.h,
               ),
-              Text(
-                'ادخل كلمة السر',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(
-                height: 5.h,
-              ),
               TextFormFiled(
                 readOnly: false,
                 maxLines: 1,
                 minLines: 1,
-                textInputType: TextInputType.text,
-                obscureText: true,
-                controller: passowrdController,
-                hintText: '********',
+                textInputType: TextInputType.phone,
+                obscureText: false,
+                controller: amountController,
+                hintText: '3',
                 validator: () {},
               ),
               Spacer(),
               GestureDetector(
                 onTap: () {
-                  if (passowrdController.text.isNotEmpty &&
-                      emailController.text.isNotEmpty) {
+                  if (amountController.text.isNotEmpty) {
                     setState(() {
-                      scanToGetRewards(sendData: {
-                        'code': widget.id,
-                        'password': passowrdController.text,
-                        'email': emailController.text,
+                      scanToPayToStationFromWallet(sendData: {
+                        'client_id': widget.id,
+                        'amount': amountController.text,
                       });
 
                       loading = true;
                     });
                   } else {
                     ShowToast(
-                        msg: 'ادخل البريد الالكتروني وكلمه السر',
-                        states: ToastStates.ERROR);
+                        msg: "ادخل عدد اللترات", states: ToastStates.ERROR);
                   }
                 },
                 child: Container(
@@ -176,11 +153,12 @@ class _RewordsScreenState extends State<RewordsScreen> {
     );
   }
 
-  Future<void> scanToGetRewards({Map<String, dynamic>? sendData}) async {
+  Future<void> scanToPayToStationFromWallet(
+      {Map<String, dynamic>? sendData}) async {
     var data = FormData.fromMap(sendData!);
     await DioHelper.dio
         .post(
-            'https://admin.gulfsaudi.com/public/api/v1/client/ScanToGetRewards',
+            'https://admin.gulfsaudi.com/public/api/v1/client/scanToPayToStationFromWallet',
             data: data)
         .then((value) {
       setState(() {
@@ -188,18 +166,20 @@ class _RewordsScreenState extends State<RewordsScreen> {
       });
 
       ShowToast(
-          msg: value.data["status"] == true
-              ? 'تمت العمليه بنجاح'
-              : value.data['message']["code"] != null
-                  ? "The selected code is invalid."
-                  : value.data['message']["email"] != null
-                      ? "The selected email is invalid."
-                      : value.data['message']["password"] != null
-                          ? "The password field is required."
-                          : '',
-          states: value.data["status"] == true
+          msg: value.data["status"] == true &&
+                  value.data["message"] == "عملية التحويل تمت بنجاح"
+              ? 'The payment was successful'
+              : '${value.data["message"]}',
+          states: value.data["status"] == true &&
+                  value.data["message"] == "عملية التحويل تمت بنجاح"
               ? ToastStates.SUCCESS
               : ToastStates.ERROR);
+
+      value.data["status"] == true &&
+              value.data["message"] == "عملية التحويل تمت بنجاح"
+          ? Navigator.of(context).push(
+              MaterialPageRoute(builder: (BuildContext context) => MyApp()))
+          : null;
     }).catchError((onError) {
       print('${onError}');
     });

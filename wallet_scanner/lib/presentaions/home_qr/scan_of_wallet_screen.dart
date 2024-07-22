@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:wallet_scanner/dio_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:wallet_scanner/presentaions/transaction_screen.dart';
 
 class WalletScreen extends StatefulWidget {
-  WalletScreen({super.key, required this.id});
-  String id;
+  WalletScreen(
+      {super.key, required this.name, required this.balance, required this.id});
+  String name;
+  int balance;
+  int id;
   @override
   State<WalletScreen> createState() => _WalletScreenState();
 }
@@ -18,7 +22,7 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
           foregroundColor: Colors.white,
@@ -63,7 +67,7 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ),
           title: Text(
-            "ارسال رصيد",
+            "wallet",
             style: TextStyle(
               color: Colors.black,
               fontSize: 20.sp,
@@ -78,95 +82,83 @@ class _WalletScreenState extends State<WalletScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
+                height: 20.h,
+              ),
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(4.r)),
+                  border: Border.all(
+                      color: Color.fromRGBO(255, 99, 25, 1), width: 1.w),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Client Name :',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      widget.name,
+                      style: TextStyle(
+                        color: Color.fromRGBO(255, 99, 25, 1),
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 20.h,
+              ),
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(4.r)),
+                  border: Border.all(
+                      color: Color.fromRGBO(255, 99, 25, 1), width: 1.w),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Balance :',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      "${widget.balance}",
+                      style: TextStyle(
+                        color: Color.fromRGBO(255, 99, 25, 1),
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
                 height: 100.h,
               ),
-              Text(
-                'ادخل المبلغ الذي تريد ارساله',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              gasContainer(name: 'Diesel'),
               SizedBox(
-                height: 5.h,
+                height: 20.h,
               ),
-              TextFormFiled(
-                readOnly: false,
-                maxLines: 1,
-                minLines: 1,
-                textInputType: TextInputType.number,
-                obscureText: false,
-                controller: moneyController,
-                hintText: '250' + ' ' + 'SR',
-                validator: () {},
-              ),
+              gasContainer(name: 'Gasoline 91'),
               SizedBox(
-                height: 15.h,
+                height: 20.h,
               ),
-              Text(
-                'ادخل كلمة السر',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(
-                height: 5.h,
-              ),
-              TextFormFiled(
-                readOnly: false,
-                maxLines: 1,
-                minLines: 1,
-                textInputType: TextInputType.text,
-                obscureText: true,
-                controller: passowrdController,
-                hintText: '********',
-                validator: () {},
-              ),
-           Spacer(),
-              GestureDetector(
-                onTap: () {
-                  if (passowrdController.text.isNotEmpty &&
-                      moneyController.text.isNotEmpty) {
-                    setState(() {
-                      loading = true;
-                      scanToGetUserId(
-                          id: widget.id,
-                          amount: moneyController.text,
-                          password: passowrdController.text);
-                    });
-                  } else {
-                    ShowToast(
-                        msg: 'ادخل المبلغ وكلمه السر',
-                        states: ToastStates.ERROR);
-                  }
-                },
-                child: Container(
-                  height: 50.h,
-                  width: double.maxFinite,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10.r),
-                      color: Color.fromRGBO(255, 99, 25, 1)),
-                  child: Center(
-                    child: loading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'ارسال',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
+              gasContainer(name: 'Gasoline 92'),
             ],
           ),
         ),
@@ -174,43 +166,68 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Future<void> scanToGetUserId({required String id, amount, password}) async {
-    var data = FormData.fromMap(
-        {'client_id': id, 'amount': amount, 'password': password});
-    await DioHelper.dio
-        .post(
-            'https://admin.gulfsaudi.com/public/api/v1/client/scanToPayToStationFromWallet',
-            data: data)
-        .then((value) {
-      setState(() { loading = false;});
-
-           ShowToast(
-          msg: value.data["status"] == true
-              ? 'تمت العمليه بنجاح'
-              : value.data["errors"]["client_id"][0] != null
-                  ? "The selected code is invalid."
-                  : value.data["errors"]["amount"][0] != null
-                      ? "The selected amount is invalid."
-                     
-                  : value.data["errors"]["password"][0] != null
-                      ? " password is not correct."
-                     
-                          : '',
-          states: value.data["status"] == true
-              ? ToastStates.SUCCESS
-              : ToastStates.ERROR);
-    }).catchError((onError) {
-      setState(() { loading = false;});
-           ShowToast(
-                        msg:onError,
-                        states:
-                        
-                        
-                        
-                         ToastStates.ERROR);
-      print('${onError.toString()}rrrrrrrrrrrrrrrrrrrrr');
-    });
+  Widget gasContainer({String? name}) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (BuildContext context) => TransactionScreen(
+                  id: widget.id,
+                  name: name,
+                )));
+      },
+      child: Container(
+        height: 40.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(4.r)),
+          color: Color.fromRGBO(255, 99, 25, 1),
+        ),
+        child: Center(
+          child: Text(
+            name!,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
   }
+
+  // Future<void> scanToGetUserId({required String id, amount, password}) async {
+  //   var data = FormData.fromMap(
+  //       {'client_id': id, 'amount': amount, 'password': password});
+  //   await DioHelper.dio
+  //       .post(
+  //           'https://admin.gulfsaudi.com/public/api/v1/client/scanToPayToStationFromWallet',
+  //           data: data)
+  //       .then((value) {
+  //     setState(() {
+  //       loading = false;
+  //     });
+
+  //     ShowToast(
+  //         msg: value.data["status"] == true
+  //             ? 'تمت العمليه بنجاح'
+  //             : value.data["errors"]["client_id"][0] != null
+  //                 ? "The selected code is invalid."
+  //                 : value.data["errors"]["amount"][0] != null
+  //                     ? "The selected amount is invalid."
+  //                     : value.data["errors"]["password"][0] != null
+  //                         ? " password is not correct."
+  //                         : '',
+  //         states: value.data["status"] == true
+  //             ? ToastStates.SUCCESS
+  //             : ToastStates.ERROR);
+  //   }).catchError((onError) {
+  //     setState(() {
+  //       loading = false;
+  //     });
+  //     ShowToast(msg: onError, states: ToastStates.ERROR);
+  //     print('${onError.toString()}rrrrrrrrrrrrrrrrrrrrr');
+  //   });
+  // }
 }
 
 void ShowToast({required String? msg, required ToastStates? states}) {
