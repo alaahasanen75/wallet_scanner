@@ -3,13 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:wallet_scanner/dio_helper.dart';
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
+import 'package:wallet_scanner/presentaions/home_qr/login_screen.dart';
 import 'package:wallet_scanner/presentaions/home_qr/scan_of_points_screen.dart';
 import 'package:wallet_scanner/presentaions/home_qr/scan_of_wallet_screen.dart';
 
-void main() {
-  DioHelper.init();
+void main() async{   WidgetsFlutterBinding.ensureInitialized();
+
+  await CasheHelper.init();
+   DioHelper.init();
+   
+
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -19,10 +25,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _qrBarCodeScannerDialogPlugin = QrBarCodeScannerDialog();
-  String? code;
-  String? massage;
-  bool ClientProfileloading = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +36,30 @@ class _MyAppState extends State<MyApp> {
         builder: (_, child) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            home: Scaffold(
+            home: CasheHelper.getToken() != null ?HomeScreen(): LoginScreen()
+          );
+        });
+  }
+
+
+
+
+ 
+}
+class HomeScreen extends StatefulWidget {
+  HomeScreen({super.key});
+
+  @override
+    bool ClientProfileloading = false;
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {  final _qrBarCodeScannerDialogPlugin = QrBarCodeScannerDialog();
+
+
+    return Scaffold(
               appBar: AppBar(
                 backgroundColor: Color.fromRGBO(255, 99, 25, 1),
                 centerTitle: true,
@@ -129,12 +155,18 @@ class _MyAppState extends State<MyApp> {
                   ),
                 );
               }),
-            ),
-          );
-        });
+            );
   }
 
-  Future<void> scanTogetClientProfile({required int id,bool pointsScreen=false}) async {
+
+
+
+
+
+
+
+
+ Future<void> scanTogetClientProfile({required int id,bool pointsScreen=false}) async {
     var data = FormData.fromMap({
       'id': id,
     });
@@ -164,10 +196,20 @@ class _MyAppState extends State<MyApp> {
       });
     }).catchError((onError) {
       setState(() {
-        ClientProfileloading = false;
+     widget.   ClientProfileloading = false;
       });
       ShowToast(msg: onError, states: ToastStates.ERROR);
       print('${onError.toString()}rrrrrrrrrrrrrrrrrrrrr');
     });
   }
+
+
+
+
+
+
+
+
+
+
 }

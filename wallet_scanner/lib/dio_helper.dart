@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DioHelper {
   static late Dio dio;
@@ -202,5 +203,32 @@ class TextFormFiled extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+class CasheHelper {
+  static late SharedPreferences sharedPreferences;
+
+  static Future<void> init() async {
+    sharedPreferences = await SharedPreferences.getInstance();
+  }
+
+  static Future<bool> saveData({
+    required String key,
+    required dynamic value,
+  }) async {
+    if (value is String) return await sharedPreferences.setString(key, value);
+    if (value is int) return await sharedPreferences.setInt(key, value);
+    if (value is bool) return await sharedPreferences.setBool(key, value);
+    return await sharedPreferences.setDouble(key, value);
+  }
+
+  static String? getToken() {
+    String? token = sharedPreferences.getString('token');
+    if (token == null) {
+      print('No Data Saved');
+    } else {
+      print('$token');
+    }
+    return token;
   }
 }
